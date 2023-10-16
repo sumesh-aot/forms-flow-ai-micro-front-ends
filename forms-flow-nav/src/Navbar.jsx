@@ -13,6 +13,7 @@ import {
   ADMIN_ROLE,
   ENABLE_FORMS_MODULE,
   ENABLE_PROCESSES_MODULE,
+  ENABLE_INTEGRATION_MODULE,
   ENABLE_DASHBOARDS_MODULE,
   ENABLE_APPLICATIONS_MODULE,
   ENABLE_TASKS_MODULE,
@@ -232,6 +233,25 @@ const NavBar = React.memo(({ props }) => {
                         >
                           <i className="fa fa-cogs fa-lg fa-fw mr-2" />
                           {t("Processes")}
+                        </Nav.Link>
+                      )
+                    : null}
+
+                  {getUserRolePermission(userRoles, STAFF_DESIGNER)
+                    ? ENABLE_INTEGRATION_MODULE && (
+                        <Nav.Link
+                          as={Link}
+                          to={`${baseUrl}integration`}
+                          className={`main-nav nav-item ${
+                            pathname.match(
+                              createURLPathMatchExp("integration", baseUrl)
+                            )
+                              ? "active-tab"
+                              : "inactive-tab"
+                          }`}
+                        >
+                          <i className="fa fa-diagram-project fa-lg fa-fw mr-2" />
+                          {t("Integration")}
                         </Nav.Link>
                       )
                     : null}

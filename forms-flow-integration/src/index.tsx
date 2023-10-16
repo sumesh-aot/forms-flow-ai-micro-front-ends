@@ -24,8 +24,8 @@ function Integration() {
 
         if (response.ok) {
           const data: ApiResponse = await response.json();
-          const workato_path = '%2Frecipes%3Ffid%3D14660409%23assets';
-          const iframSrc = `https://app.workato.com/direct_link?workato_dl_path=${workato_path}&workato_dl_token=${data.token}`;
+          const workato_path = '%2Frecipes%3Ffid%3D14660409%23assets'; //TODO to be changed upon implementation
+          const iframSrc = `https://app.workato.com/direct_link?workato_dl_path=${workato_path}&workato_dl_token=${data.token}`; //TODO to be changed upon implementation
           setIframeSource(iframSrc);
         } else {
           console.error('Failed to fetch iframe source');
@@ -40,13 +40,11 @@ function Integration() {
 
   return (
     <div>
-      <h1>Workato Iframe</h1>
-      <iframe
+      <iframe id="workato-integration"
         title="Embedded Page"
         src={iframeSource}
-        width="800"
-        height="600"
-        frameBorder="0"
+        width="100%"
+        height="800" //TODO
         allowFullScreen
       ></iframe>
     </div>
