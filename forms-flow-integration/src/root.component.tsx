@@ -6,7 +6,7 @@ export default function Root(props) {
   return (
     <BrowserRouter>
       <Switch>
-        <Route path={BASE_ROUTE} render={() => <Integration />}></Route>
+        <Route path={BASE_ROUTE} render={() => <Integration props={props} />}></Route>
       </Switch>
     </BrowserRouter>
   );

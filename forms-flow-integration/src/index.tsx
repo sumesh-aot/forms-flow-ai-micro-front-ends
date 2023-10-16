@@ -1,54 +1,100 @@
-import React, { useState, useEffect } from 'react';
-import { WEB_BASE_URL } from './endpoints/config';
-import { StorageService } from '@formsflow/service';
+import React from "react";
+import { Route, Switch, Redirect, useHistory, useParams } from "react-router-dom";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { KeycloakService, StorageService } from "@formsflow/service";
+import {
+  KEYCLOAK_URL_AUTH,
+  KEYCLOAK_URL_REALM,
+  KEYCLOAK_CLIENT,
+} from "./endpoints/config";
+import { BASE_ROUTE, DESIGNER_ROLE, MULTITENANCY_ENABLED } from "./constants";
+import Head from "./containers/head";
+import i18n from "./resourceBundles/i18n";
+import "./index.scss";
+import Recipes from "./components/recipes";
 
-// Define a type for the data received from the API
-interface ApiResponse {
-  token: string;
-}
 
-function Integration() {
-  const [iframeSource, setIframeSource] = useState<string>('');
+const Integration = React.memo(({ props }: any) => {
+  const { publish, subscribe } = props;
+  const  {tenantId}  = useParams();
+  const [instance, setInstance] = React.useState(props.getKcInstance());
+  const [isAuth, setIsAuth] = React.useState(instance?.isAuthenticated());
+  const [page, setPage] = React.useState("Integration");
+  const [isDesigner, setIsDesigner] = React.useState(false);
+  const history = useHistory();
 
-  useEffect(() => {
-    async function fetchIframeSource() {
-      try {
-        const response = await fetch(`${WEB_BASE_URL}/workato/embed/token`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${StorageService.get(StorageService.User.AUTH_TOKEN)}`,
-          },
-          body: JSON.stringify({}),
-        });
-
-        if (response.ok) {
-          const data: ApiResponse = await response.json();
-          const workato_path = '%2Frecipes%3Ffid%3D14660409%23assets'; //TODO to be changed upon implementation
-          const iframSrc = `https://app.workato.com/direct_link?workato_dl_path=${workato_path}&workato_dl_token=${data.token}`; //TODO to be changed upon implementation
-          setIframeSource(iframSrc);
-        } else {
-          console.error('Failed to fetch iframe source');
-        }
-      } catch (error) {
-        console.error('Error while fetching iframe source:', error);
-      }
-    }
-
-    fetchIframeSource();
+  const baseUrl = MULTITENANCY_ENABLED ? `/tenant/${tenantId}/` : "/";
+  
+  React.useEffect(() => {
+    publish("ES_ROUTE", { pathname: `${baseUrl}admin` });
+    subscribe("ES_CHANGE_LANGUAGE", (msg, data) => {
+      i18n.changeLanguage(data);
+    })
   }, []);
 
+  React.useEffect(()=>{
+    StorageService.save("tenantKey", tenantId)
+  },[tenantId])
+
+  React.useEffect(() => {
+    if (!isAuth) {
+      let instance = KeycloakService.getInstance(
+        KEYCLOAK_URL_AUTH,
+        KEYCLOAK_URL_REALM,
+        KEYCLOAK_CLIENT,
+        tenantId
+      );
+      instance.initKeycloak(() => {
+        setIsAuth(instance.isAuthenticated());
+        publish("FF_AUTH", instance);
+      });
+    }
+  }, []);
+
+  React.useEffect(()=>{
+    if(!isAuth) return
+    const roles = JSON.parse(StorageService.get(StorageService.User.USER_ROLE));
+    if(roles.includes(DESIGNER_ROLE)){
+      setIsDesigner(true);
+    }
+    const locale = localStorage.getItem("i18nextLng")
+    if(locale) i18n.changeLanguage(locale);
+  },[isAuth])
+
+  const headerList = () => {
+    return [
+      {
+        name: "Recipes",
+        onClick: () => history.push(`${baseUrl}integration/recipes`),
+      },
+    ];
+  };
+
   return (
-    <div>
-      <iframe id="workato-integration"
-        title="Embedded Page"
-        src={iframeSource}
-        width="100%"
-        height="800" //TODO
-        allowFullScreen
-      ></iframe>
-    </div>
-  );
-}
+      <>
+        {isDesigner && (
+        <div className="admin-container" tabIndex={0}>
+          <Head items={headerList()} page={page} />
+          <ToastContainer theme="colored" />
+          <Switch>
+            <Route
+              exact
+              path={`${BASE_ROUTE}integration/recipes`}
+              render={() => (
+                <Recipes
+                  {...props}
+                  setTab={setPage}
+                />
+              )}
+            />
+            
+          </Switch>
+          </div> 
+      )}
+      </>
+    );
+  });
+        
 
 export default Integration;
